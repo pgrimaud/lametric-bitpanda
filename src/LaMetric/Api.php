@@ -79,7 +79,7 @@ class Api
          */
         $frame = new Frame();
         $frame->setText($data['total']);
-        $frame->setIcon('43782');
+        $frame->setIcon('45491');
 
         $frameCollection->addFrame($frame);
 
