@@ -4,8 +4,8 @@ on:
   push:
 
 jobs:
-  code-quality:
-    name: Code Quality
+  cd:
+    name: CD
     runs-on: ubuntu-latest
 
     steps:
