@@ -28,4 +28,4 @@ If you like or use this app, please share your love by starring this repository,
 
 ## Feedback
 
-If you need help, [create an issue](https://github.com/pgrimaud/lametric-stocks/issues) or contact us on [Twitter](http://twitter.com/pgrimaud_).
+If you need help, [create an issue](https://github.com/pgrimaud/lametric-bitpanda/issues) or contact us on [Twitter](http://twitter.com/pgrimaud_).
