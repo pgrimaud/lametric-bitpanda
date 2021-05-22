@@ -25,7 +25,7 @@ class Api
      */
     public function fetchData(array $parameters = []): FrameCollection
     {
-        $redisKey   = 'lametric:bitpanda:prices:' . strtolower($parameters['currency']);
+        $redisKey   = 'lametric:crypto-account:prices:' . strtolower($parameters['currency']);
         $jsonPrices = $this->redisClient->get($redisKey);
 
         if (!$jsonPrices) {
