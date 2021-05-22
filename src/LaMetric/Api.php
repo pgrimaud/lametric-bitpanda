@@ -55,7 +55,7 @@ class Api
             if ($wallet['attributes']['balance'] > 0) {
                 foreach ($prices['data'] as $crypto) {
                     if ($crypto['symbol'] === $wallet['attributes']['cryptocoin_symbol']) {
-                        $totalBalance += $crypto['quote']['USD']['price'] * $wallet['attributes']['balance'];
+                        $totalBalance += $crypto['quote'][strtoupper($parameters['currency'])]['price'] * $wallet['attributes']['balance'];
                         break;
                     }
                 }
