@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace LaMetric;
 
 use GuzzleHttp\Client as HttpClient;
+use LaMetric\Helper\SymbolHelper;
 use Predis\Client as RedisClient;
 use LaMetric\Response\{Frame, FrameCollection};
 
 class Api
 {
     public const BITPANDA_API = 'https://api.bitpanda.com/v1/wallets/';
-
-    public const CMC_API ='https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?cryptocurrency_type=all&limit=4999';
+    public const CMC_API = 'https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?cryptocurrency_type=all&limit=4999&convert=';
 
     public function __construct(private HttpClient $httpClient, private RedisClient $redisClient, private array $credentials = [])
     {
@@ -25,11 +25,13 @@ class Api
      */
     public function fetchData(array $parameters = []): FrameCollection
     {
-        $redisKey = 'lametric:bitpanda:prices';
+        $redisKey   = 'lametric:bitpanda:prices:' . strtolower($parameters['currency']);
         $jsonPrices = $this->redisClient->get($redisKey);
 
         if (!$jsonPrices) {
-            $res = $this->httpClient->request('GET', self::CMC_API);
+
+            $cmcApi     = self::CMC_API . strtolower($parameters['currency']);
+            $res        = $this->httpClient->request('GET', $cmcApi);
             $jsonPrices = (string) $res->getBody();
 
             $this->redisClient->set($redisKey, $jsonPrices, 'ex', 120);
@@ -38,10 +40,10 @@ class Api
         $prices = json_decode($jsonPrices, true);
 
         $res = $this->httpClient->request('GET', self::BITPANDA_API, [
-      'headers' => [
-        'X-API-KEY' => $parameters['api-key']
-      ]
-    ]);
+            'headers' => [
+                'X-API-KEY' => $parameters['api-key'],
+            ],
+        ]);
 
         $json = (string) $res->getBody();
 
@@ -61,8 +63,8 @@ class Api
         }
 
         return $this->mapData([
-      'total' =>  '$' . round($totalBalance, 2),
-    ]);
+            'total' => SymbolHelper::getSymbol($parameters['currency']) . round($totalBalance, 2),
+        ]);
     }
 
     /**
