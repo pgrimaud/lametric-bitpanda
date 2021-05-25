@@ -22,4 +22,9 @@ return [
         ],
         'default' => 'before',
     ],
+    [
+        'key'     => 'separate-assets',
+        'type'    => Field::SWITCH_TYPE,
+        'default' => 'false',
+    ],
 ];

@@ -6,7 +6,7 @@ namespace LaMetric\Helper;
 
 class SymbolHelper
 {
-    const SYMBOLS = [
+    public const SYMBOLS = [
         'USD' => '$',
         'EUR' => '€',
         'GBP' => '£',

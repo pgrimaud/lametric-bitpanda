@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace LaMetric;
 
 use GuzzleHttp\Client as HttpClient;
-use LaMetric\Helper\PriceHelper;
-use LaMetric\Helper\SymbolHelper;
+use LaMetric\Helper\{IconHelper, PriceHelper, SymbolHelper};
 use Predis\Client as RedisClient;
 use LaMetric\Response\{Frame, FrameCollection};
 
@@ -30,7 +29,6 @@ class Api
         $jsonPrices = $this->redisClient->get($redisKey);
 
         if (!$jsonPrices) {
-
             $cmcApi     = self::CMC_API . strtolower($parameters['currency']);
             $res        = $this->httpClient->request('GET', $cmcApi);
             $jsonPrices = (string) $res->getBody();
@@ -50,34 +48,38 @@ class Api
 
         $data = json_decode($json, true);
 
-        $totalBalance = 0;
+        $wallets = [];
 
         foreach ($data['data'] as $wallet) {
             if ($wallet['attributes']['balance'] > 0) {
                 foreach ($prices['data'] as $crypto) {
                     if ($crypto['symbol'] === $wallet['attributes']['cryptocoin_symbol']) {
-                        $totalBalance += $crypto['quote'][strtoupper($parameters['currency'])]['price'] * $wallet['attributes']['balance'];
+                        if ($parameters['separate-assets'] === 'false') {
+                            $wallets['ALL'] += $crypto['quote'][strtoupper($parameters['currency'])]['price'] * $wallet['attributes']['balance'];
+                        } else {
+                            $wallets[$crypto['symbol']] = $crypto['quote'][strtoupper($parameters['currency'])]['price'] * $wallet['attributes']['balance'];
+                        }
                         break;
                     }
                 }
             }
         }
 
-        switch ($parameters['position']) {
-            case 'hide':
-                $total = PriceHelper::round($totalBalance);
-                break;
-            case 'after':
-                $total = PriceHelper::round($totalBalance) . SymbolHelper::getSymbol($parameters['currency']);
-                break;
-            case 'before':
-            default:
-                $total = SymbolHelper::getSymbol($parameters['currency']) . PriceHelper::round($totalBalance);
+        foreach ($wallets as &$wallet) {
+            switch ($parameters['position']) {
+                case 'hide':
+                    $wallet = PriceHelper::round($wallet);
+                    break;
+                case 'after':
+                    $wallet = PriceHelper::round($wallet) . SymbolHelper::getSymbol($parameters['currency']);
+                    break;
+                case 'before':
+                default:
+                    $wallet = SymbolHelper::getSymbol($parameters['currency']) . PriceHelper::round($wallet);
+            }
         }
 
-        return $this->mapData([
-            'total' => $total,
-        ]);
+        return $this->mapData($wallets);
     }
 
     /**
@@ -89,14 +91,14 @@ class Api
     {
         $frameCollection = new FrameCollection();
 
-        /**
-         * Transform data as FrameCollection and Frame
-         */
-        $frame = new Frame();
-        $frame->setText($data['total']);
-        $frame->setIcon('45491');
+        foreach ($data as $key => $wallet) {
+            $frame = new Frame();
+            $frame->setText($wallet);
+            $frame->setIcon(IconHelper::getIcon($key));
 
-        $frameCollection->addFrame($frame);
+            $frameCollection->addFrame($frame);
+        }
+
 
         return $frameCollection;
     }
