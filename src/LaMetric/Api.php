@@ -57,7 +57,8 @@ class Api
                         if ($parameters['separate-assets'] === 'false') {
                             $wallets['ALL'] += $crypto['quote'][strtoupper($parameters['currency'])]['price'] * $wallet['attributes']['balance'];
                         } else {
-                            if (($price = $crypto['quote'][strtoupper($parameters['currency'])]['price'] * $wallet['attributes']['balance']) > 1) {
+                            $price = $crypto['quote'][strtoupper($parameters['currency'])]['price'] * $wallet['attributes']['balance'];
+                            if (($price > 1 && $parameters['hide-small-assets'] === 'true') || $parameters['hide-small-assets'] === 'false') {
                                 $wallets[$crypto['symbol']] = $price;
                             }
                         }
