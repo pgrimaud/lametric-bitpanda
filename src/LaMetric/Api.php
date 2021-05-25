@@ -51,7 +51,7 @@ class Api
         $wallets = [];
 
         foreach ($data['data'] as $wallet) {
-            if ($wallet['attributes']['balance'] > 0 ) {
+            if ($wallet['attributes']['balance'] > 0) {
                 foreach ($prices['data'] as $crypto) {
                     if ($crypto['symbol'] === $wallet['attributes']['cryptocoin_symbol']) {
                         if ($parameters['separate-assets'] === 'false') {
