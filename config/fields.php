@@ -15,6 +15,11 @@ return [
     [
         'key'     => 'position',
         'type'    => Field::CHOICES_TYPE,
+        'choices' => [
+            'before',
+            'after',
+            'hide',
+        ],
         'default' => 'before',
     ],
 ];
