@@ -63,8 +63,20 @@ class Api
             }
         }
 
+        switch ($parameters['position']) {
+            case 'hide':
+                $total = PriceHelper::round($totalBalance);
+                break;
+            case 'after':
+                $total = PriceHelper::round($totalBalance) . SymbolHelper::getSymbol($parameters['currency']);
+                break;
+            case 'before':
+            default:
+                $total = SymbolHelper::getSymbol($parameters['currency']) . PriceHelper::round($totalBalance);
+        }
+
         return $this->mapData([
-            'total' => SymbolHelper::getSymbol($parameters['currency']) . PriceHelper::round($totalBalance),
+            'total' => $total,
         ]);
     }
 
