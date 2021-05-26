@@ -55,6 +55,9 @@ class Api
                 foreach ($prices['data'] as $crypto) {
                     if ($crypto['symbol'] === $wallet['attributes']['cryptocoin_symbol']) {
                         if ($parameters['separate-assets'] === 'false') {
+                            if (!isset($wallets['ALL'])) {
+                                $wallets['ALL'] = 0;
+                            }
                             $wallets['ALL'] += $crypto['quote'][strtoupper($parameters['currency'])]['price'] * $wallet['attributes']['balance'];
                         } else {
                             $price = $crypto['quote'][strtoupper($parameters['currency'])]['price'] * $wallet['attributes']['balance'];
@@ -96,7 +99,7 @@ class Api
 
         foreach ($data as $key => $wallet) {
             $frame = new Frame();
-            $frame->setText($wallet);
+            $frame->setText((string)$wallet);
             $frame->setIcon(IconHelper::getIcon($key));
 
             $frameCollection->addFrame($frame);
