@@ -14,7 +14,9 @@ class Api
     public const BITPANDA_API = 'https://api.bitpanda.com/v1/wallets/';
     public const CMC_API = 'https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?cryptocurrency_type=all&limit=4999&convert=';
 
-    public function __construct(private HttpClient $httpClient, private RedisClient $redisClient, private array $credentials = [])
+    public function __construct(
+        private HttpClient $httpClient,
+        private RedisClient $redisClient)
     {
     }
 
@@ -93,7 +95,7 @@ class Api
 
         foreach ($data as $key => $wallet) {
             $frame = new Frame();
-            $frame->setText((string)$wallet);
+            $frame->setText((string) $wallet);
             $frame->setIcon(IconHelper::getIcon($key));
 
             $frameCollection->addFrame($frame);
