@@ -56,7 +56,6 @@ class Api
 
         foreach ($data['data'] as $wallet) {
             if ($wallet['attributes']['balance'] > 0) {
-
                 if (isset($prices[$wallet['attributes']['cryptocoin_symbol']])) {
                     $asset = $prices[$wallet['attributes']['cryptocoin_symbol']];
 
@@ -72,9 +71,7 @@ class Api
                                 $wallets[$asset['short']] = $price;
                             }
                         }
-                        break;
                     }
-
                 }
             }
         }
