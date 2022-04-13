@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LaMetric;
 
+use Codenixsv\CoinGeckoApi\CoinGeckoClient;
 use GuzzleHttp\Client as HttpClient;
 use LaMetric\Helper\{IconHelper, PriceHelper, SymbolHelper};
 use Predis\Client as RedisClient;
@@ -15,7 +16,7 @@ class Api
     public const CMC_API = 'https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?cryptocurrency_type=all&limit=4999&convert=';
 
     public function __construct(
-        private HttpClient $httpClient,
+        private HttpClient  $httpClient,
         private RedisClient $redisClient)
     {
     }
@@ -27,13 +28,13 @@ class Api
      */
     public function fetchData(array $parameters = []): FrameCollection
     {
-        $redisKey   = 'lametric:cryptocurrencies:' . strtolower($parameters['currency']);
+        $redisKey = 'lametric:cryptocurrencies:' . strtolower($parameters['currency']);
         $jsonPrices = $this->redisClient->get($redisKey);
 
         if (!$jsonPrices) {
-            $cmcApi     = self::CMC_API . strtolower($parameters['currency']);
-            $res        = $this->httpClient->request('GET', $cmcApi);
-            $jsonPrices = (string) $res->getBody();
+            $cmcApi = self::CMC_API . strtolower($parameters['currency']);
+            $res = $this->httpClient->request('GET', $cmcApi);
+            $jsonPrices = (string)$res->getBody();
 
             $prices = $this->formatData(json_decode($jsonPrices, true), $parameters['currency']);
 
@@ -48,7 +49,7 @@ class Api
             ],
         ]);
 
-        $json = (string) $res->getBody();
+        $json = (string)$res->getBody();
 
         $data = json_decode($json, true);
 
@@ -56,9 +57,20 @@ class Api
 
         foreach ($data['data'] as $wallet) {
             if ($wallet['attributes']['balance'] > 0) {
+                if ($wallet['attributes']['cryptocoin_symbol'] === 'PAN') {
+                    $client = new CoinGeckoClient();
+                    $data = $client->simple()->getPrice('pantos', $parameters['currency']);
+                    $missingCrypto = [
+                        'PAN' => [
+                            'short' => 'PAN',
+                            'price' => $data['pantos'][strtolower($parameters['currency'])]
+                        ]
+                    ];
+                    $prices = array_merge($prices, $missingCrypto);
+                }
+
                 if (isset($prices[$wallet['attributes']['cryptocoin_symbol']])) {
                     $asset = $prices[$wallet['attributes']['cryptocoin_symbol']];
-
                     if ($asset['short'] === $wallet['attributes']['cryptocoin_symbol']) {
                         if ($parameters['separate-assets'] === 'false') {
                             if (!isset($wallets['ALL'])) {
@@ -98,7 +110,7 @@ class Api
 
         foreach ($data as $key => $wallet) {
             $frame = new Frame();
-            $frame->setText((string) $wallet);
+            $frame->setText((string)$wallet);
             $frame->setIcon(IconHelper::getIcon($key));
 
             $frameCollection->addFrame($frame);
@@ -109,7 +121,7 @@ class Api
     }
 
     /**
-     * @param array  $sources
+     * @param array $sources
      * @param string $currencyToShow
      *
      * @return array
@@ -129,9 +141,9 @@ class Api
                 }
 
                 $data[$crypto['symbol']] = [
-                    'short'  => $crypto['symbol'],
-                    'price'  => $crypto['quote'][$currencyToShow]['price'],
-                    'change' => round((float) $crypto['quote'][$currencyToShow]['percent_change_24h'], 2),
+                    'short' => $crypto['symbol'],
+                    'price' => $crypto['quote'][$currencyToShow]['price'],
+                    'change' => round((float)$crypto['quote'][$currencyToShow]['percent_change_24h'], 2),
                 ];
             }
         }
