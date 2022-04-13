@@ -32,4 +32,9 @@ return [
         'type'    => Field::SWITCH_TYPE,
         'default' => 'true',
     ],
+    [
+        'key'     => 'fiat',
+        'type'    => Field::SWITCH_TYPE,
+        'default' => 'false',
+    ],
 ];

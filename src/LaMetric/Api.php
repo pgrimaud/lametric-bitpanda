@@ -12,7 +12,8 @@ use LaMetric\Response\{Frame, FrameCollection};
 
 class Api
 {
-    public const BITPANDA_API = 'https://api.bitpanda.com/v1/wallets/';
+    public const BITPANDA_API_WALLET = 'https://api.bitpanda.com/v1/wallets/';
+    public const BITPANDA_API_FIAT = 'https://api.bitpanda.com/v1/fiatwallets/';
     public const CMC_API = 'https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?cryptocurrency_type=all&limit=4999&convert=';
 
     public function __construct(
@@ -43,7 +44,7 @@ class Api
             $prices = json_decode($jsonPrices, true);
         }
 
-        $res = $this->httpClient->request('GET', self::BITPANDA_API, [
+        $res = $this->httpClient->request('GET', self::BITPANDA_API_WALLET, [
             'headers' => [
                 'X-API-KEY' => $parameters['api-key'],
             ],
@@ -57,6 +58,9 @@ class Api
 
         foreach ($data['data'] as $wallet) {
             if ($wallet['attributes']['balance'] > 0) {
+
+                // quick fix for PAN (not in top 5000 cryptos)
+                /* @todo refactor me later. private crypto api? */
                 if ($wallet['attributes']['cryptocoin_symbol'] === 'PAN') {
                     $client = new CoinGeckoClient();
                     $data = $client->simple()->getPrice('pantos', $parameters['currency']);
@@ -82,6 +86,36 @@ class Api
                             if (($price > 1 && $parameters['hide-small-assets'] === 'true') || $parameters['hide-small-assets'] === 'false') {
                                 $wallets[$asset['short']] = $price;
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($parameters['fiat'] === 'true') {
+            $res = $this->httpClient->request('GET', self::BITPANDA_API_FIAT, [
+                'headers' => [
+                    'X-API-KEY' => $parameters['api-key'],
+                ],
+            ]);
+
+            $json = (string)$res->getBody();
+            $data = json_decode($json, true);
+
+            foreach ($data['data'] as $currency) {
+                if ((float)$currency['attributes']['balance'] > 0) {
+
+                    $amount = (float)$currency['attributes']['balance'];
+
+                    if ($parameters['separate-assets'] === 'false') {
+                        if (!isset($wallets['ALL'])) {
+                            $wallets['ALL'] = 0;
+                        }
+                        $wallets['ALL'] += $amount;
+                    } else {
+                        $price = $amount;
+                        if (($price > 1 && $parameters['hide-small-assets'] === 'true') || $parameters['hide-small-assets'] === 'false') {
+                            $wallets[$currency['attributes']['fiat_symbol']] = $amount;
                         }
                     }
                 }
