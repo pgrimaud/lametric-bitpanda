@@ -2,7 +2,8 @@ name: CD
 
 on:
   push:
-
+    branches:
+      - "master"
 jobs:
   cd:
     name: CD
