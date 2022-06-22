@@ -2,6 +2,7 @@ name: Code Quality
 
 on:
   pull_request:
+    branches: [ master ]
 
 jobs:
   code-quality:
