@@ -19,6 +19,7 @@ try {
     $validator->check($parameters);
 
     $api    = new Api(new HttpClient, new RedisClient, $credentials);
+
     $frames = $api->fetchData($validator->getData());
 
     echo $response->printData($frames);

@@ -29,8 +29,7 @@ class Api
      */
     public function fetchData(array $parameters = []): FrameCollection
     {
-        $redisKey = 'lametric:cryptocurrencies:' . strtolower($parameters['currency']);
-        $jsonPrices = $this->redisClient->get($redisKey);
+        $jsonPrices = $this->redisClient->get('lametric:cryptocurrencies');
 
         if (!$jsonPrices) {
             $cmcApi = self::CMC_API . strtolower($parameters['currency']);
@@ -39,7 +38,7 @@ class Api
 
             $prices = $this->formatData(json_decode($jsonPrices, true), $parameters['currency']);
 
-            $this->redisClient->set($redisKey, json_encode($prices), 'ex', 300);
+            $this->redisClient->set('lametric:cryptocurrencies', json_encode($prices), 'ex', 300);
         } else {
             $prices = json_decode($jsonPrices, true);
         }
