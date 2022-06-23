@@ -4,44 +4,29 @@ declare(strict_types=1);
 
 namespace LaMetric;
 
-use Codenixsv\CoinGeckoApi\CoinGeckoClient;
 use GuzzleHttp\Client as HttpClient;
-use LaMetric\Helper\{IconHelper, PriceHelper, SymbolHelper};
+use LaMetric\Helper\IconHelper;
+use LaMetric\Helper\PriceHelper;
+use LaMetric\Helper\SymbolHelper;
 use Predis\Client as RedisClient;
-use LaMetric\Response\{Frame, FrameCollection};
+use LaMetric\Response\Frame;
+use LaMetric\Response\FrameCollection;
 
 class Api
 {
     public const BITPANDA_API_WALLET = 'https://api.bitpanda.com/v1/wallets/';
     public const BITPANDA_API_FIAT = 'https://api.bitpanda.com/v1/fiatwallets/';
-    public const CMC_API = 'https://web-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?cryptocurrency_type=all&limit=4999&convert=';
 
     public function __construct(
         private HttpClient  $httpClient,
-        private RedisClient $redisClient)
-    {
+        private RedisClient $redisClient
+    ) {
     }
 
-    /**
-     * @param array $parameters
-     *
-     * @return FrameCollection
-     */
     public function fetchData(array $parameters = []): FrameCollection
     {
-        $jsonPrices = $this->redisClient->get('lametric:cryptocurrencies');
-
-        if (!$jsonPrices) {
-            $cmcApi = self::CMC_API . strtolower($parameters['currency']);
-            $res = $this->httpClient->request('GET', $cmcApi);
-            $jsonPrices = (string)$res->getBody();
-
-            $prices = $this->formatData(json_decode($jsonPrices, true), $parameters['currency']);
-
-            $this->redisClient->set('lametric:cryptocurrencies', json_encode($prices), 'ex', 300);
-        } else {
-            $prices = json_decode($jsonPrices, true);
-        }
+        $pricesFile = $this->redisClient->get('lametric:cryptocurrencies');
+        $prices = json_decode($pricesFile, true);
 
         $res = $this->httpClient->request('GET', self::BITPANDA_API_WALLET, [
             'headers' => [
@@ -57,34 +42,17 @@ class Api
 
         foreach ($data['data'] as $wallet) {
             if ($wallet['attributes']['balance'] > 0) {
-
-                // quick fix for PAN (not in top 5000 cryptos)
-                /* @todo refactor me later. private crypto api? */
-                if ($wallet['attributes']['cryptocoin_symbol'] === 'PAN') {
-                    $client = new CoinGeckoClient();
-                    $data = $client->simple()->getPrice('pantos', $parameters['currency']);
-                    $missingCrypto = [
-                        'PAN' => [
-                            'short' => 'PAN',
-                            'price' => $data['pantos'][strtolower($parameters['currency'])]
-                        ]
-                    ];
-                    $prices = array_merge($prices, $missingCrypto);
-                }
-
                 if (isset($prices[$wallet['attributes']['cryptocoin_symbol']])) {
                     $asset = $prices[$wallet['attributes']['cryptocoin_symbol']];
-                    if ($asset['short'] === $wallet['attributes']['cryptocoin_symbol']) {
-                        if ($parameters['separate-assets'] === 'false') {
-                            if (!isset($wallets['ALL'])) {
-                                $wallets['ALL'] = 0;
-                            }
-                            $wallets['ALL'] += $asset['price'] * $wallet['attributes']['balance'];
-                        } else {
-                            $price = $asset['price'] * $wallet['attributes']['balance'];
-                            if (($price > 1 && $parameters['hide-small-assets'] === 'true') || $parameters['hide-small-assets'] === 'false') {
-                                $wallets[$asset['short']] = $price;
-                            }
+                    if ($parameters['separate-assets'] === 'false') {
+                        if (!isset($wallets['ALL'])) {
+                            $wallets['ALL'] = 0;
+                        }
+                        $wallets['ALL'] += $asset['price'] * $wallet['attributes']['balance'];
+                    } else {
+                        $price = $asset['price'] * $wallet['attributes']['balance'];
+                        if (($price > 1 && $parameters['hide-small-assets'] === 'true') || $parameters['hide-small-assets'] === 'false') {
+                            $wallets[$wallet['attributes']['cryptocoin_symbol']] = $price;
                         }
                     }
                 }
@@ -103,7 +71,6 @@ class Api
 
             foreach ($data['data'] as $currency) {
                 if ((float)$currency['attributes']['balance'] > 0) {
-
                     $amount = (float)$currency['attributes']['balance'];
 
                     if ($parameters['separate-assets'] === 'false') {
@@ -122,6 +89,8 @@ class Api
         }
 
         foreach ($wallets as &$wallet) {
+            $wallet = $wallet * $this->convertToCurrency($parameters['currency']);
+
             $wallet = match ($parameters['position']) {
                 'hide' => PriceHelper::round($wallet),
                 'after' => PriceHelper::round($wallet) . SymbolHelper::getSymbol($parameters['currency']),
@@ -132,11 +101,6 @@ class Api
         return $this->mapData($wallets);
     }
 
-    /**
-     * @param array $data
-     *
-     * @return FrameCollection
-     */
     private function mapData(array $data = []): FrameCollection
     {
         $frameCollection = new FrameCollection();
@@ -149,38 +113,22 @@ class Api
             $frameCollection->addFrame($frame);
         }
 
-
         return $frameCollection;
     }
 
-    /**
-     * @param array $sources
-     * @param string $currencyToShow
-     *
-     * @return array
-     */
-    private function formatData(array $sources, string $currencyToShow): array
+    private function convertToCurrency(string $currencyToShow): float|int
     {
-        $data = [];
-
-        foreach ($sources['data'] as $crypto) {
-            // manage multiple currencies with the same symbol
-            // & override VAL value
-            if (!isset($data[$crypto['symbol']]) || $crypto['symbol'] === 'VAL') {
-
-                // manage error on results // maybe next time?
-                if (!isset($crypto['quote'][$currencyToShow]['price'])) {
-                    exit;
-                }
-
-                $data[$crypto['symbol']] = [
-                    'short' => $crypto['symbol'],
-                    'price' => $crypto['quote'][$currencyToShow]['price'],
-                    'change' => round((float)$crypto['quote'][$currencyToShow]['percent_change_24h'], 2),
-                ];
-            }
+        if ($currencyToShow === 'USD') {
+            return 1;
         }
 
-        return $data;
+        $pricesFile = $this->redisClient->get('lametric:forex');
+        $rates = json_decode($pricesFile, true);
+
+        if (!isset($rates[$currencyToShow])) {
+            throw new \Exception(sprintf('Currency %s not found', $currencyToShow));
+        }
+
+        return $rates[$currencyToShow];
     }
 }
