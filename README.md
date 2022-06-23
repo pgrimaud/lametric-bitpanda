@@ -4,7 +4,7 @@ Easily display the total balance of your cryptocurrencies of your Bitpanda accou
 
 ![image](https://user-images.githubusercontent.com/1866496/119162834-20cc9200-ba5b-11eb-8c6b-55cb757ae6b0.png)
 
-Based on https://www.coingecko.com/ and https://exchangerate.host/
+Based on the [Bitpanda API](https://developers.bitpanda.com/platform/), [CoinGecko](https://www.coingecko.com/) and [ExchangeRate](https://exchangerate.host/)
 
 # How to connect your Bitpanda account?
 
