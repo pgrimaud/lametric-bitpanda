@@ -26,7 +26,7 @@ class Api
     public function fetchData(array $parameters = []): FrameCollection
     {
         $pricesFile = $this->redisClient->get('lametric:cryptocurrencies');
-        $prices = json_decode($pricesFile, true);
+        $prices = json_decode((string)$pricesFile, true);
 
         $res = $this->httpClient->request('GET', self::BITPANDA_API_WALLET, [
             'headers' => [
@@ -123,7 +123,7 @@ class Api
         }
 
         $pricesFile = $this->redisClient->get('lametric:forex');
-        $rates = json_decode($pricesFile, true);
+        $rates = json_decode((string)$pricesFile, true);
 
         if (!isset($rates[$currencyToShow])) {
             throw new \Exception(sprintf('Currency %s not found', $currencyToShow));
