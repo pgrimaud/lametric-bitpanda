@@ -4,7 +4,7 @@ Easily display the total balance of your cryptocurrencies of your Bitpanda accou
 
 ![image](https://user-images.githubusercontent.com/1866496/119162834-20cc9200-ba5b-11eb-8c6b-55cb757ae6b0.png)
 
-Based on the [Bitpanda API](https://developers.bitpanda.com/platform/) and [CoinMarketCap API](https://coinmarketcap.com/api/)
+Based on https://www.coingecko.com/ and https://exchangerate.host/
 
 # How to connect your Bitpanda account?
 
@@ -25,6 +25,7 @@ If you like or use this app, please share your love by starring this repository,
 
 - Pierre Grimaud [@pgrimaud](https://github.com/pgrimaud)
 - Julien Cousin-Alliot [@nispeon](https://github.com/nispeon)
+- Yannis Obert [@yannisobert](https://github.com/yannisobert)
 
 ## Feedback
 
