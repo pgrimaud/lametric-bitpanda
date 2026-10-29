@@ -1,5 +1,8 @@
 # Bitpanda for LaMetric
 
+> [!CAUTION]
+> READ-ONLY : APP MIGRATED TO https://github.com/pgrimaud/lumiere
+
 Easily display the total balance of your cryptocurrencies of your Bitpanda account.
 
 ![image](https://user-images.githubusercontent.com/1866496/119162834-20cc9200-ba5b-11eb-8c6b-55cb757ae6b0.png)
